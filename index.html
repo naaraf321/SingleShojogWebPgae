@@ -81,16 +81,16 @@
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
               <div class="flex justify-between items-start mb-4">
                 <h2 class="text-lg font-semibold text-gray-800">${index + 1}. ${mcq.question_markdown}</h2>
-                <div class="text-sm text-gray-500">${mcq.id}</div>
+                <div class="text-sm text-gray-500">ID- ${mcq.id}</div>
               </div>
               ${renderTags(mcq.source_info)}
               <div class="space-y-3 mt-4">
                 ${renderOptions(mcq.options_json, mcq.correct_answer, mcq.id)}
               </div>
               <div class="flex items-center space-x-2 mt-6">
+                <span class="tag bg-indigo-100 text-indigo-700">${topicMap.get(mcq.topic_id) || ''}</span>
                 <span class="tag">${chapterMap.get(mcq.chapter_id) || ''}</span>
                 <span class="tag">${subjectMap.get(mcq.subject_id) || ''}</span>
-                <span class="tag bg-indigo-100 text-indigo-700">${topicMap.get(mcq.topic_id) || ''}</span>
               </div>
               <div class="solution-box mt-6 p-4 border rounded bg-gray-50">
                 <h3 class="font-semibold text-gray-700 mb-2">সঠিক উত্তর ও ব্যাখ্যা:</h3>
