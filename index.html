@@ -7,29 +7,12 @@
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script type="text/javascript" id="MathJax-script" async
     src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
-    .mcq-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
-    img.question-img, img.answer-img { max-width: 100%; height: auto; margin: 10px 0; }
-    .option { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-    .option.correct { background-color: #d4edda; border-color: #28a745; }
-    .answer-block { background-color: #f1f1f1; padding: 10px; border-radius: 5px; margin-top: 20px; }
-    .source-info { margin-top: 20px; background-color: #e9ecef; padding: 10px; border-radius: 5px; }
-    .navigation { text-align: center; margin-top: 20px; }
-    .navigation button { padding: 10px 20px; margin: 5px; }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="mcq-container" id="mcq"></div>
-  <div class="navigation">
-    <button onclick="prevMcq()">Previous</button>
-    <button onclick="nextMcq()">Next</button>
-  </div>
+<body class="bg-gray-100 p-4 text-sm">
+  <div id="mcq-list" class="space-y-6 max-w-3xl mx-auto"></div>
 
   <script>
-    let mcqs = [];
-    let currentIndex = 0;
-
     function getQueryParam(param) {
       const urlParams = new URLSearchParams(window.location.search);
       return urlParams.get(param);
@@ -37,9 +20,7 @@
 
     function safeJsonParseOptions(jsonStr) {
       try {
-        const fixed = jsonStr
-          .replace(/'/g, '"') // replace single quotes with double
-          .replace(/""/g, '"'); // fix accidental double quotes
+        const fixed = jsonStr.replace(/'/g, '"').replace(/""/g, '"');
         return JSON.parse(fixed);
       } catch (e) {
         console.error("Failed to parse options_json:", e);
@@ -52,97 +33,92 @@
     }
 
     function renderSourceInfo(sourceInfoJson) {
-      let html = '<h4>Source Info:</h4><ul>';
+      let html = '<div class="mt-3 text-xs text-gray-600 border-t pt-2"><strong>Source Info:</strong><ul class="list-disc ml-5">';
       const source = JSON.parse(sourceInfoJson || '{}');
       if (source.universities) {
-        html += '<li><strong>Universities:</strong><ul>';
+        html += '<li><strong>Universities:</strong><ul class="list-disc ml-5">';
         for (const [k, v] of Object.entries(source.universities)) {
           html += `<li>${k}: ${v || 'N/A'}</li>`;
         }
         html += '</ul></li>';
       }
       if (source.books?.length) {
-        html += '<li><strong>Books:</strong><ul>';
+        html += '<li><strong>Books:</strong><ul class="list-disc ml-5">';
         for (const book of source.books) {
           html += `<li>${book}</li>`;
         }
         html += '</ul></li>';
       }
       if (source.boards) {
-        html += '<li><strong>Boards:</strong><ul>';
+        html += '<li><strong>Boards:</strong><ul class="list-disc ml-5">';
         for (const [k, v] of Object.entries(source.boards)) {
           html += `<li>${k}: ${v || 'N/A'}</li>`;
         }
         html += '</ul></li>';
       }
-      html += '</ul>';
+      html += '</ul></div>';
       return html;
-    }
-
-    function renderMcq() {
-      const mcq = mcqs[currentIndex];
-      if (!mcq) return;
-
-      let html = '';
-
-      if (mcq.question_image_url) {
-        html += `<img src="${mcq.question_image_url}" class="question-img" />`;
-      }
-
-      html += `<div>${renderMarkdown(mcq.question_markdown)}</div>`;
-
-      const options = safeJsonParseOptions(mcq.options_json || '[]');
-      for (const opt of options) {
-        const key = Object.keys(opt).find(k => k !== 'correct');
-        const value = renderMarkdown(opt[key]);
-        const isCorrect = opt.correct;
-        html += `<div class="option ${isCorrect ? 'correct' : ''}"><strong>${key}:</strong> ${value}</div>`;
-      }
-
-      html += `<div class="answer-block">
-        <strong>Correct Answer:</strong> ${mcq.correct_answer}<br>
-        <div>${renderMarkdown(mcq.answer_explanation)}</div>
-      </div>`;
-
-      if (mcq.answer_image_url) {
-        html += `<img src="${mcq.answer_image_url}" class="answer-img" />`;
-      }
-
-      html += `<div class="source-info">${renderSourceInfo(mcq.source_info)}</div>`;
-
-      document.getElementById('mcq').innerHTML = html;
-      MathJax.typeset();
-    }
-
-    function nextMcq() {
-      if (currentIndex < mcqs.length - 1) {
-        currentIndex++;
-        renderMcq();
-      }
-    }
-
-    function prevMcq() {
-      if (currentIndex > 0) {
-        currentIndex--;
-        renderMcq();
-      }
     }
 
     async function fetchMcqs(startId, endId) {
       const url = `https://wnqytfyplnfvylsffglv.supabase.co/rest/v1/mcqs?select=*&id=gte.${startId}&id=lte.${endId}`;
-      console.log("Fetching MCQs from:", url);
       const response = await fetch(url, {
         headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA',
+          'apikey': 'YOUR_SUPABASE_ANON_KEY',
+          'Authorization': 'Bearer YOUR_SUPABASE_ANON_KEY',
           'Content-Type': 'application/json'
         }
       });
-      console.log("Response status:", response.status);
       const data = await response.json();
-      console.log("Fetched data:", data);
-      mcqs = data || [];
-      renderMcq();
+      renderMcqs(data || []);
+    }
+
+    function renderMcqs(mcqs) {
+      const container = document.getElementById('mcq-list');
+      container.innerHTML = '';
+
+      mcqs.forEach((mcq, index) => {
+        let html = `<div class="bg-white p-4 rounded-xl shadow text-sm">
+          <div class="flex justify-between items-center mb-2">
+            <div class="font-semibold">${index + 1}. ${mcq.question_text}</div>
+          </div>`;
+
+        if (mcq.question_image_url) {
+          html += `<img src="${mcq.question_image_url}" class="w-full h-auto my-2 rounded" />`;
+        }
+
+        html += `<div class="text-gray-800">${renderMarkdown(mcq.question_markdown)}</div>`;
+
+        const options = safeJsonParseOptions(mcq.options_json || '[]');
+        html += '<div class="mt-2 space-y-2">';
+        options.forEach(opt => {
+          const key = Object.keys(opt).find(k => k !== 'correct');
+          const value = renderMarkdown(opt[key]);
+          const isCorrect = opt.correct;
+          html += `<div class="flex items-center gap-2 p-2 rounded border ${isCorrect ? 'bg-green-100 border-green-500' : 'border-gray-300'}">
+            <div class="w-6 h-6 rounded-full border flex items-center justify-center ${isCorrect ? 'bg-green-600 text-white' : 'bg-white'}">
+              ${key}
+            </div>
+            <div class="text-gray-800">${value}</div>
+          </div>`;
+        });
+        html += '</div>';
+
+        html += `<div class="mt-3 text-gray-700">
+          <strong>Correct Answer:</strong> ${mcq.correct_answer}
+          <div>${renderMarkdown(mcq.answer_explanation)}</div>
+        </div>`;
+
+        if (mcq.answer_image_url) {
+          html += `<img src="${mcq.answer_image_url}" class="w-full h-auto my-2 rounded" />`;
+        }
+
+        html += renderSourceInfo(mcq.source_info);
+        html += '</div>';
+
+        container.innerHTML += html;
+      });
+      MathJax.typeset();
     }
 
     const fromId = getQueryParam('from');
@@ -150,7 +126,7 @@
     if (fromId && toId) {
       fetchMcqs(fromId, toId);
     } else {
-      document.getElementById('mcq').innerHTML = '<p>Please provide "from" and "to" query parameters in the URL.</p>';
+      document.getElementById('mcq-list').innerHTML = '<p class="text-center text-red-500">Please provide "from" and "to" query parameters in the URL.</p>';
     }
   </script>
 </body>
