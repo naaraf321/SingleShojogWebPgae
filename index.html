@@ -87,10 +87,9 @@
                 <span class="tag bg-indigo-100 text-indigo-700">${tp}</span>
               </div>
               <div class="flex items-center space-x-4">
-                <span class="material-icons action-icon">favorite_border</span>
-                <span class="material-icons action-icon">bookmark_border</span>
-                <span class="material-icons action-icon">share</span>
-              </div>
+  <span class="material-icons text-red-500 cursor-pointer report-btn" data-mcq-id="${m.id}" title="Report">flag</span>
+</div>
+
             </div>
             <div class="solution-box">
               ${m.answer_image_url ? `<img src="${m.answer_image_url}" class="solution-image"/>` : ''}
