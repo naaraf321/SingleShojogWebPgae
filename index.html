@@ -2,49 +2,110 @@
 <html lang="bn">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MCQ Viewer</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+    <script
+      async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
     <style type="text/tailwindcss">
-      body { font-family: "Hind Siliguri", sans-serif; background-color: #f3f4f6; }
-      .question-card { @apply bg-white rounded-lg shadow-md p-6 mb-6 transition-shadow; }
-      .question-card:hover { @apply shadow-lg; }
-      .option-label { @apply flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer mb-3 transition; }
-      .option-label:hover { @apply bg-gray-50 border-gray-300; }
-      .option-label input[type="radio"] { @apply form-radio h-5 w-5 text-indigo-600 mr-3; }
-      .option-label.correct { @apply bg-green-100 border-green-300; }
-      .option-label.selected { @apply bg-indigo-100 border-indigo-300; }
-      .tag { @apply bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm ml-1; }
-      .solution-box { @apply bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6; }
-      .question-image, .solution-image { @apply w-full max-h-56 object-contain rounded-md mb-4; }
-      .option-image { @apply w-10 h-10 object-cover rounded mr-3; }
-      .action-icon { @apply text-gray-600 cursor-pointer transition; }
-      .action-icon.active { @apply text-red-500; }
-      .action-icon:hover { @apply text-indigo-600; }
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        background-color: #f3f4f6;
+      }
+      .question-card {
+        @apply bg-white rounded-lg shadow-md p-6 mb-6 transition-shadow;
+      }
+      .question-card:hover {
+        @apply shadow-lg;
+      }
+      .option-label {
+        @apply flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer mb-3 transition;
+      }
+      .option-label:hover {
+        @apply bg-gray-50 border-gray-300;
+      }
+      .option-label input[type="radio"] {
+        @apply form-radio h-5 w-5 text-indigo-600 mr-3;
+      }
+      .option-label.correct {
+        @apply bg-green-100 border-green-300;
+      }
+      .option-label.selected {
+        @apply bg-indigo-100 border-indigo-300;
+      }
+      .tag {
+        @apply bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm ml-1;
+      }
+      .solution-box {
+        @apply bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6;
+      }
+      .question-image,
+      .solution-image {
+        @apply w-full max-h-56 object-contain rounded-md mb-4;
+      }
+      .option-image {
+        @apply w-10 h-10 object-cover rounded mr-3;
+      }
+      .action-icon {
+        @apply text-gray-600 cursor-pointer transition;
+      }
+      .action-icon.active {
+        @apply text-red-500;
+      }
+      .action-icon:hover {
+        @apply text-indigo-600;
+      }
     </style>
   </head>
   <body class="bg-gray-100 p-4 md:p-8">
     <main id="mcq" class="max-w-3xl mx-auto"></main>
 
     <!-- Report Modal -->
-    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+    <div
+      id="reportModal"
+      class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50"
+    >
       <div class="bg-white p-6 rounded-lg max-w-md w-full shadow-xl">
         <h2 class="text-lg font-semibold mb-2">এই MCQ টি রিপোর্ট করতে চান?</h2>
-        <textarea id="reportComment" class="w-full mt-2 p-2 border rounded" rows="3" placeholder="অভিযোগ লিখুন (ঐচ্ছিক)"></textarea>
+        <textarea
+          id="reportComment"
+          class="w-full mt-2 p-2 border rounded"
+          rows="3"
+          placeholder="অভিযোগ লিখুন (ঐচ্ছিক)"
+        ></textarea>
         <div class="flex justify-end space-x-2 mt-4">
-          <button id="cancelReport" class="px-4 py-2 bg-gray-300 rounded">না</button>
-          <button id="confirmReport" class="px-4 py-2 bg-red-500 text-white rounded">রিপোর্ট করুন</button>
+          <button id="cancelReport" class="px-4 py-2 bg-gray-300 rounded">
+            না
+          </button>
+          <button
+            id="confirmReport"
+            class="px-4 py-2 bg-red-500 text-white rounded"
+          >
+            রিপোর্ট করুন
+          </button>
         </div>
       </div>
     </div>
 
     <script>
-      const API_URL = 'https://wnqytfyplnfvylsffglv.supabase.co/rest/v1';
-      const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA';
-      const maps = { subjects: new Map(), chapters: new Map(), topics: new Map() };
+      const API_URL = "https://wnqytfyplnfvylsffglv.supabase.co/rest/v1";
+      const API_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA";
+      const maps = {
+        subjects: new Map(),
+        chapters: new Map(),
+        topics: new Map(),
+      };
       let currentReportId = null;
 
       document.addEventListener("click", function (e) {
@@ -59,41 +120,47 @@
         document.getElementById("reportComment").value = "";
       });
 
-      document.getElementById("confirmReport").addEventListener("click", async () => {
-        const comment = document.getElementById("reportComment").value.trim();
-        const updates = { has_problem: true };
-        if (comment !== "") updates.comments = comment;
+      document
+        .getElementById("confirmReport")
+        .addEventListener("click", async () => {
+          const comment = document.getElementById("reportComment").value.trim();
+          const updates = { has_problem: true };
+          if (comment !== "") updates.comments = comment;
 
-        if (currentReportId) {
-          const res = await fetch(`${API_URL}/mcqs?id=eq.${currentReportId}`, {
-            method: "PATCH",
-            headers: {
-              "apikey": API_KEY,
-              "Authorization": `Bearer ${API_KEY}`,
-              "Content-Type": "application/json",
-              "Prefer": "return=minimal"
-            },
-            body: JSON.stringify(updates)
-          });
+          if (currentReportId) {
+            const res = await fetch(
+              `${API_URL}/mcqs?id=eq.${currentReportId}`,
+              {
+                method: "PATCH",
+                headers: {
+                  apikey: API_KEY,
+                  Authorization: `Bearer ${API_KEY}`,
+                  "Content-Type": "application/json",
+                  Prefer: "return=minimal",
+                },
+                body: JSON.stringify(updates),
+              }
+            );
 
-          if (res.ok) {
-            alert("রিপোর্ট সাবমিট হয়েছে। ধন্যবাদ!");
-          } else {
-            alert("রিপোর্ট সাবমিট করা যায়নি। আবার চেষ্টা করুন।");
+            if (res.ok) {
+              alert("রিপোর্ট সাবমিট হয়েছে। ধন্যবাদ!");
+            } else {
+              const errMsg = await res.text();
+              alert("রিপোর্ট করা যায়নি: " + errMsg);
+            }
           }
-        }
 
-        document.getElementById("reportModal").classList.add("hidden");
-        document.getElementById("reportComment").value = "";
-      });
+          document.getElementById("reportModal").classList.add("hidden");
+          document.getElementById("reportComment").value = "";
+        });
 
       async function fetchLookup() {
-        for (const table of ['subjects','chapters','topics']) {
+        for (const table of ["subjects", "chapters", "topics"]) {
           const res = await fetch(`${API_URL}/${table}?select=id,name`, {
-            headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` }
+            headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` },
           });
           const data = await res.json();
-          data.forEach(r => maps[table].set(r.id, r.name));
+          data.forEach((r) => maps[table].set(r.id, r.name));
         }
       }
 
@@ -101,33 +168,43 @@
         await fetchLookup();
         const url = `${API_URL}/mcqs?select=*&id=gte.${from}&id=lte.${to}`;
         const res = await fetch(url, {
-          headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` }
+          headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` },
         });
         const mcqs = await res.json();
-        document.getElementById('mcq').innerHTML = mcqs.map(renderCard).join('') || '<p class="text-red-500">No MCQs found.</p>';
+        document.getElementById("mcq").innerHTML =
+          mcqs.map(renderCard).join("") ||
+          '<p class="text-red-500">No MCQs found.</p>';
         attachInteractions();
         MathJax.typeset();
       }
 
       function renderCard(m) {
-        const ch = maps.chapters.get(m.chapter_id) || '';
-        const sb = maps.subjects.get(m.subject_id) || '';
-        const tp = maps.topics.get(m.topic_id) || '';
-        const opts = JSON.parse(m.options_json).map(o => {
-          const cls = o.correct ? 'option-label correct' : 'option-label';
-          return `
+        const ch = maps.chapters.get(m.chapter_id) || "";
+        const sb = maps.subjects.get(m.subject_id) || "";
+        const tp = maps.topics.get(m.topic_id) || "";
+        const opts = JSON.parse(m.options_json)
+          .map((o) => {
+            const cls = o.correct ? "option-label correct" : "option-label";
+            return `
             <label class="${cls}" for="q${m.id}_opt${o.label}">
               <input id="q${m.id}_opt${o.label}" name="question${m.id}" type="radio" value="${o.label}" />
               ${o.text}
             </label>`;
-        }).join('');
+          })
+          .join("");
         return `
           <div class="question-card">
             <div class="flex justify-between items-start mb-4">
-              <h2 class="text-lg font-semibold text-gray-800">${m.question_markdown}</h2>
+              <h2 class="text-lg font-semibold text-gray-800">${
+                m.question_markdown
+              }</h2>
               <div class="text-sm text-gray-500">${m.id}</div>
             </div>
-            ${m.question_image_URL ? `<img src="${m.question_image_URL}" class="question-image"/>` : ''}
+            ${
+              m.question_image_URL
+                ? `<img src="${m.question_image_URL}" class="question-image"/>`
+                : ""
+            }
             <div class="flex flex-wrap justify-end mb-4">
               ${renderSourceTags(m.source_info)}
             </div>
@@ -139,12 +216,20 @@
                 <span class="tag bg-indigo-100 text-indigo-700">${tp}</span>
               </div>
               <div class="flex items-center space-x-4">
-                <span class="material-icons text-red-500 cursor-pointer report-btn" data-mcq-id="${m.id}" title="Report">flag</span>
+                <span class="material-icons text-red-500 cursor-pointer report-btn" data-mcq-id="${
+                  m.id
+                }" title="Report">flag</span>
               </div>
             </div>
             <div class="solution-box">
-              ${m.answer_image_url ? `<img src="${m.answer_image_url}" class="solution-image"/>` : ''}
-              <p class="text-green-600 font-medium mb-2">(${m.correct_answer})</p>
+              ${
+                m.answer_image_url
+                  ? `<img src="${m.answer_image_url}" class="solution-image"/>`
+                  : ""
+              }
+              <p class="text-green-600 font-medium mb-2">(${
+                m.correct_answer
+              })</p>
               <p class="text-sm text-gray-600">${m.answer_explanation}</p>
             </div>
           </div>`;
@@ -154,28 +239,37 @@
         try {
           const s = JSON.parse(src);
           const tags = [];
-          if (s.universities) for (let [u,y] of Object.entries(s.universities)) tags.push(`${u} ${y}`);
-          if (s.boards) for (let [b,y] of Object.entries(s.boards)) tags.push(`${b} ${y}`);
+          if (s.universities)
+            for (let [u, y] of Object.entries(s.universities))
+              tags.push(`${u} ${y}`);
+          if (s.boards)
+            for (let [b, y] of Object.entries(s.boards)) tags.push(`${b} ${y}`);
           if (Array.isArray(s.books)) tags.push(...s.books);
-          return tags.map(t => `<span class="tag">${t}</span>`).join('');
-        } catch { return ''; }
+          return tags.map((t) => `<span class="tag">${t}</span>`).join("");
+        } catch {
+          return "";
+        }
       }
 
       function attachInteractions() {
-        document.querySelectorAll('input[type="radio"]').forEach(r => {
-          r.addEventListener('change', () => {
-            document.querySelectorAll(`input[name="${r.name}"]`).forEach(s => {
-              s.closest('.option-label').classList.remove('selected');
-            });
-            r.closest('.option-label').classList.add('selected');
+        document.querySelectorAll('input[type="radio"]').forEach((r) => {
+          r.addEventListener("change", () => {
+            document
+              .querySelectorAll(`input[name="${r.name}"]`)
+              .forEach((s) => {
+                s.closest(".option-label").classList.remove("selected");
+              });
+            r.closest(".option-label").classList.add("selected");
           });
         });
       }
 
-      const from = new URLSearchParams(location.search).get('from');
-      const to   = new URLSearchParams(location.search).get('to');
+      const from = new URLSearchParams(location.search).get("from");
+      const to = new URLSearchParams(location.search).get("to");
       if (from && to) fetchMcqs(from, to);
-      else document.getElementById('mcq').innerHTML = '<p class="text-red-500">Add ?from=…&to=… to URL</p>';
+      else
+        document.getElementById("mcq").innerHTML =
+          '<p class="text-red-500">Add ?from=…&to=… to URL</p>';
     </script>
   </body>
 </html>
