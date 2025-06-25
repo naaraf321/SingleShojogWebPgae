@@ -1,133 +1,137 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MCQ Viewer</title>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script type="text/javascript" id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 p-4 text-sm">
-  <div id="mcq-list" class="space-y-6 max-w-3xl mx-auto"></div>
-
-  <script>
-    function getQueryParam(param) {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get(param);
-    }
-
-    function safeJsonParseOptions(jsonStr) {
-      try {
-        const fixed = jsonStr.replace(/'/g, '"').replace(/""/g, '"');
-        return JSON.parse(fixed);
-      } catch (e) {
-        console.error("Failed to parse options_json:", e);
-        return [];
+<html lang="bn">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>MCQ Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script type="text/javascript" id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <style>
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        background-color: #f3f4f6;
       }
-    }
-
-    function renderMarkdown(text) {
-      return marked.parse(text || '');
-    }
-
-    function renderSourceInfo(sourceInfoJson) {
-      let html = '<div class="mt-3 text-xs text-gray-600 border-t pt-2"><strong>Source Info:</strong><ul class="list-disc ml-5">';
-      const source = JSON.parse(sourceInfoJson || '{}');
-      if (source.universities) {
-        html += '<li><strong>Universities:</strong><ul class="list-disc ml-5">';
-        for (const [k, v] of Object.entries(source.universities)) {
-          html += `<li>${k}: ${v || 'N/A'}</li>`;
-        }
-        html += '</ul></li>';
+      .tag {
+        background-color: #e5e7eb;
+        color: #4b5563;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 0.875rem;
+        margin-left: 8px;
+        white-space: nowrap;
       }
-      if (source.books?.length) {
-        html += '<li><strong>Books:</strong><ul class="list-disc ml-5">';
-        for (const book of source.books) {
-          html += `<li>${book}</li>`;
-        }
-        html += '</ul></li>';
+    </style>
+  </head>
+  <body class="bg-gray-100 p-4 md:p-8">
+    <main id="mcq" class="max-w-3xl mx-auto"></main>
+    <script>
+      let mcqs = [];
+
+      function getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
       }
-      if (source.boards) {
-        html += '<li><strong>Boards:</strong><ul class="list-disc ml-5">';
-        for (const [k, v] of Object.entries(source.boards)) {
-          html += `<li>${k}: ${v || 'N/A'}</li>`;
-        }
-        html += '</ul></li>';
-      }
-      html += '</ul></div>';
-      return html;
-    }
 
-    async function fetchMcqs(startId, endId) {
-      const url = `https://wnqytfyplnfvylsffglv.supabase.co/rest/v1/mcqs?select=*&id=gte.${startId}&id=lte.${endId}`;
-      const response = await fetch(url, {
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA',
-          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA',
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
-      renderMcqs(data || []);
-    }
-
-    function renderMcqs(mcqs) {
-      const container = document.getElementById('mcq-list');
-      container.innerHTML = '';
-
-      mcqs.forEach((mcq, index) => {
-        let html = `<div class="bg-white p-4 rounded-xl shadow text-sm">
-          <div class="flex justify-between items-center mb-2">
-            <div class="font-semibold">${index + 1}. ${mcq.question_text}</div>
-          </div>`;
-
-        if (mcq.question_image_url) {
-          html += `<img src="${mcq.question_image_url}" class="w-full h-auto my-2 rounded" />`;
-        }
-
-        html += `<div class="text-gray-800">${renderMarkdown(mcq.question_markdown)}</div>`;
-
-        const options = safeJsonParseOptions(mcq.options_json || '[]');
-        html += '<div class="mt-2 space-y-2">';
-        options.forEach(opt => {
-          const key = Object.keys(opt).find(k => k !== 'correct');
-          const value = renderMarkdown(opt[key]);
-          const isCorrect = opt.correct;
-          html += `<div class="flex items-center gap-2 p-2 rounded border ${isCorrect ? 'bg-green-100 border-green-500' : 'border-gray-300'}">
-            <div class="w-6 h-6 rounded-full border flex items-center justify-center ${isCorrect ? 'bg-green-600 text-white' : 'bg-white'}">
-              ${key}
-            </div>
-            <div class="text-gray-800">${value}</div>
-          </div>`;
+      async function fetchMcqs(startId, endId) {
+        const url = `https://wnqytfyplnfvylsffglv.supabase.co/rest/v1/mcqs?select=*&id=gte.${startId}&id=lte.${endId}`;
+        const response = await fetch(url, {
+          headers: {
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA',
+            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA',
+            'Content-Type': 'application/json'
+          }
         });
+        mcqs = await response.json();
+        renderAllMcqs();
+      }
+
+      function renderAllMcqs() {
+        let html = '';
+        mcqs.forEach((mcq, index) => {
+          html += `
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <div class="flex justify-between items-start mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">${index + 1}. ${mcq.question_markdown}</h2>
+                <div class="text-sm text-gray-500">${mcq.id}</div>
+              </div>
+              ${renderTags(mcq.source_info)}
+              <div class="space-y-3 mt-4">
+                ${renderOptions(mcq.options_json, mcq.correct_answer, mcq.id)}
+              </div>
+              <div class="flex items-center space-x-2 mt-6">
+                <span class="tag">${mcq.chapter_id || ''}</span>
+                <span class="tag bg-indigo-100 text-indigo-700">${mcq.topic_id || ''}</span>
+              </div>
+              <div class="solution-box mt-6 p-4 border rounded bg-gray-50">
+                <h3 class="font-semibold text-gray-700 mb-2">সঠিক উত্তর ও ব্যাখ্যা:</h3>
+                <p class="text-green-600 font-medium mb-2">${mcq.correct_answer}</p>
+                <p class="text-sm text-gray-600 leading-relaxed">${mcq.answer_explanation}</p>
+                ${mcq.answer_image_url ? `<img src="${mcq.answer_image_url}" class="mt-4 rounded" />` : ''}
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('mcq').innerHTML = html;
+        MathJax.typeset();
+      }
+
+      function renderTags(sourceInfoJson) {
+        let html = '<div class="flex flex-wrap items-center justify-end mb-4">';
+        try {
+          const source = JSON.parse(sourceInfoJson || '{}');
+          const allTags = [];
+          if (source.universities) {
+            for (const [uni, year] of Object.entries(source.universities)) {
+              allTags.push(`${uni} ${year}`);
+            }
+          }
+          if (source.boards) {
+            for (const [board, year] of Object.entries(source.boards)) {
+              allTags.push(`${board} ${year}`);
+            }
+          }
+          if (source.books?.length) {
+            allTags.push(...source.books);
+          }
+          html += allTags.map(tag => `<span class="tag">${tag}</span>`).join('');
+        } catch {}
         html += '</div>';
+        return html;
+      }
 
-        html += `<div class="mt-3 text-gray-700">
-          <strong>Correct Answer:</strong> ${mcq.correct_answer}
-          <div>${renderMarkdown(mcq.answer_explanation)}</div>
-        </div>`;
-
-        if (mcq.answer_image_url) {
-          html += `<img src="${mcq.answer_image_url}" class="w-full h-auto my-2 rounded" />`;
+      function renderOptions(optionsJson, correctAnswer, qid) {
+        let html = '';
+        try {
+          const options = JSON.parse(optionsJson || '[]');
+          options.forEach((opt, i) => {
+            const key = Object.keys(opt).find(k => k !== 'correct');
+            const value = opt[key];
+            const isCorrect = opt.correct || (key === correctAnswer);
+            const labelClass = isCorrect ? 'option-label correct' : 'option-label';
+            html += `
+              <label class="${labelClass}" for="q${qid}_opt${key}">
+                <input id="q${qid}_opt${key}" name="question${qid}" type="radio" value="${key}" />
+                <span>(${key}) ${value}</span>
+              </label>
+            `;
+          });
+        } catch (e) {
+          html = '<p class="text-red-500 text-sm">Invalid options</p>';
         }
+        return html;
+      }
 
-        html += renderSourceInfo(mcq.source_info);
-        html += '</div>';
-
-        container.innerHTML += html;
-      });
-      MathJax.typeset();
-    }
-
-    const fromId = getQueryParam('from');
-    const toId = getQueryParam('to');
-    if (fromId && toId) {
-      fetchMcqs(fromId, toId);
-    } else {
-      document.getElementById('mcq-list').innerHTML = '<p class="text-center text-red-500">Please provide "from" and "to" query parameters in the URL.</p>';
-    }
-  </script>
-</body>
+      const fromId = getQueryParam('from');
+      const toId = getQueryParam('to');
+      if (fromId && toId) {
+        fetchMcqs(fromId, toId);
+      } else {
+        document.getElementById('mcq').innerHTML = '<p class="text-red-500">Please provide "from" and "to" query parameters in the URL.</p>';
+      }
+    </script>
+  </body>
 </html>
