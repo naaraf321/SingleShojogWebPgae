@@ -2,162 +2,139 @@
 <html lang="bn">
   <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>MCQ Viewer</title>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script type="text/javascript" id="MathJax-script" async
-      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-    <style>
-      body {
-        font-family: "Hind Siliguri", sans-serif;
-        background-color: #f3f4f6;
-      }
-      .tag {
-        background-color: #e5e7eb;
-        color: #4b5563;
-        padding: 4px 10px;
-        border-radius: 16px;
-        font-size: 0.875rem;
-        margin-left: 8px;
-        white-space: nowrap;
-      }
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+    <style type="text/tailwindcss">
+      body { font-family: "Hind Siliguri", sans-serif; background-color: #f3f4f6; }
+      .question-card { @apply bg-white rounded-lg shadow-md p-6 mb-6 transition-shadow; }
+      .question-card:hover { @apply shadow-lg; }
+      .option-label { @apply flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer mb-3 transition; }
+      .option-label:hover { @apply bg-gray-50 border-gray-300; }
+      .option-label input[type="radio"] { @apply form-radio h-5 w-5 text-indigo-600 mr-3; }
+      .option-label.correct { @apply bg-green-100 border-green-300; }
+      .option-label.selected { @apply bg-indigo-100 border-indigo-300; }
+      .tag { @apply bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm ml-1; }
+      .solution-box { @apply bg-gray-50 border border-gray-200 rounded-lg p-4 mt-6; }
+      .question-image, .solution-image { @apply w-full max-h-56 object-contain rounded-md mb-4; }
+      .option-image { @apply w-10 h-10 object-cover rounded mr-3; }
+      .action-icon { @apply text-gray-600 cursor-pointer transition; }
+      .action-icon.active { @apply text-red-500; }
+      .action-icon:hover { @apply text-indigo-600; }
     </style>
   </head>
   <body class="bg-gray-100 p-4 md:p-8">
     <main id="mcq" class="max-w-3xl mx-auto"></main>
+
     <script>
       const API_URL = 'https://wnqytfyplnfvylsffglv.supabase.co/rest/v1';
-      const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA';
+      const API_KEY = 'eyJhbGciOi...'; // your anon key
 
-      let mcqs = [];
-      const subjectMap = new Map();
-      const chapterMap = new Map();
-      const topicMap = new Map();
+      const maps = { subjects: new Map(), chapters: new Map(), topics: new Map() };
 
-      function getQueryParam(param) {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get(param);
-      }
-
-      async function fetchLookupData() {
-        const tables = ['subjects', 'chapters', 'topics'];
-        for (const table of tables) {
+      async function fetchLookup() {
+        for (const table of ['subjects','chapters','topics']) {
           const res = await fetch(`${API_URL}/${table}?select=id,name`, {
-            headers: {
-              apikey: API_KEY,
-              Authorization: `Bearer ${API_KEY}`
-            }
+            headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` }
           });
           const data = await res.json();
-          data.forEach(item => {
-            if (table === 'subjects') subjectMap.set(item.id, item.name);
-            else if (table === 'chapters') chapterMap.set(item.id, item.name);
-            else if (table === 'topics') topicMap.set(item.id, item.name);
-          });
+          data.forEach(r => maps[table].set(r.id, r.name));
         }
       }
 
-      async function fetchMcqs(startId, endId) {
-        await fetchLookupData();
-        const url = `${API_URL}/mcqs?select=*&id=gte.${startId}&id=lte.${endId}`;
-        const response = await fetch(url, {
-          headers: {
-            apikey: API_KEY,
-            Authorization: `Bearer ${API_KEY}`,
-            'Content-Type': 'application/json'
-          }
+      async function fetchMcqs(from, to) {
+        await fetchLookup();
+        const url = `${API_URL}/mcqs?select=*&id=gte.${from}&id=lte.${to}`;
+        const res = await fetch(url, {
+          headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` }
         });
-        mcqs = await response.json();
-        renderAllMcqs();
-      }
-
-      function renderAllMcqs() {
-        let html = '';
-        mcqs.forEach((mcq, index) => {
-          html += `
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-              <div class="flex justify-between items-start mb-4">
-                <h2 class="text-lg font-semibold text-gray-800">${index + 1}. ${mcq.question_markdown}</h2>
-                <div class="text-sm text-gray-500">${mcq.id}</div>
-              </div>
-              ${renderTags(mcq.source_info)}
-              <div class="space-y-3 mt-4">
-                ${renderOptions(mcq.options_json, mcq.correct_answer, mcq.id)}
-              </div>
-              <div class="flex items-center space-x-2 mt-6">
-                <span class="tag">${chapterMap.get(mcq.chapter_id) || ''}</span>
-                <span class="tag">${subjectMap.get(mcq.subject_id) || ''}</span>
-                <span class="tag bg-indigo-100 text-indigo-700">${topicMap.get(mcq.topic_id) || ''}</span>
-              </div>
-              <div class="solution-box mt-6 p-4 border rounded bg-gray-50">
-                <h3 class="font-semibold text-gray-700 mb-2">সঠিক উত্তর ও ব্যাখ্যা:</h3>
-                <p class="text-green-600 font-medium mb-2">(${mcq.correct_answer})</p>
-                <p class="text-sm text-gray-600 leading-relaxed">${mcq.answer_explanation || ''}</p>
-                ${mcq.answer_image_url ? `<img src="${mcq.answer_image_url}" class="mt-4 rounded" />` : ''}
-              </div>
-            </div>
-          `;
-        });
-        document.getElementById('mcq').innerHTML = html;
+        const mcqs = await res.json();
+        document.getElementById('mcq').innerHTML = mcqs.map(renderCard).join('') || '<p class="text-red-500">No MCQs found.</p>';
+        attachInteractions();
         MathJax.typeset();
       }
 
-      function renderTags(sourceInfoJson) {
-        let html = '<div class="flex flex-wrap items-center justify-end mb-4">';
-        try {
-          const source = JSON.parse(sourceInfoJson || '{}');
-          const allTags = [];
-          if (source.universities) {
-            for (const [uni, year] of Object.entries(source.universities)) {
-              allTags.push(`${uni} ${year}`);
-            }
-          }
-          if (source.boards) {
-            for (const [board, year] of Object.entries(source.boards)) {
-              allTags.push(`${board} ${year}`);
-            }
-          }
-          if (source.books?.length) {
-            allTags.push(...source.books);
-          }
-          html += allTags.map(tag => `<span class="tag">${tag}</span>`).join('');
-        } catch (e) {}
-        html += '</div>';
-        return html;
+      function renderCard(m) {
+        const ch = maps.chapters.get(m.chapter_id) || '';
+        const sb = maps.subjects.get(m.subject_id) || '';
+        const tp = maps.topics.get(m.topic_id) || '';
+        const opts = JSON.parse(m.options_json).map(o => {
+          const cls = o.correct ? 'option-label correct' : 'option-label';
+          return `
+            <label class="${cls}" for="q${m.id}_opt${o.label}">
+              <input id="q${m.id}_opt${o.label}" name="question${m.id}" type="radio" value="${o.label}" />
+              ${o.text}
+            </label>`;
+        }).join('');
+        return `
+          <div class="question-card">
+            <div class="flex justify-between items-start mb-4">
+              <h2 class="text-lg font-semibold text-gray-800">${m.question_markdown}</h2>
+              <div class="text-sm text-gray-500">${m.id}</div>
+            </div>
+            ${m.question_image_URL ? `<img src="${m.question_image_URL}" class="question-image"/>` : ''}
+            <div class="flex flex-wrap justify-end mb-4">
+              ${renderSourceTags(m.source_info)}
+            </div>
+            <div class="space-y-3">${opts}</div>
+            <div class="flex items-center justify-between mt-6">
+              <div class="flex items-center space-x-2">
+                <span class="tag">${sb}</span>
+                <span class="tag">${ch}</span>
+                <span class="tag bg-indigo-100 text-indigo-700">${tp}</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <span class="material-icons action-icon">favorite_border</span>
+                <span class="material-icons action-icon">bookmark_border</span>
+                <span class="material-icons action-icon">share</span>
+              </div>
+            </div>
+            <div class="solution-box">
+              ${m.answer_image_url ? `<img src="${m.answer_image_url}" class="solution-image"/>` : ''}
+              <p class="text-green-600 font-medium mb-2">(${m.correct_answer})</p>
+              <p class="text-sm text-gray-600">${m.answer_explanation}</p>
+            </div>
+          </div>`;
       }
 
-      function renderOptions(optionsJson, correctAnswer, qid) {
-        let html = '';
+      function renderSourceTags(src) {
         try {
-          const options = JSON.parse(optionsJson || '[]');
-          options.forEach((opt) => {
-            const key = opt.label;
-            const value = opt.text;
-            const isCorrect = opt.correct || (key === correctAnswer);
-            const labelClass = isCorrect ? 'option-label correct' : 'option-label';
-            html += `
-              <label class="${labelClass}" for="q${qid}_opt${key}">
-                <input id="q${qid}_opt${key}" name="question${qid}" type="radio" value="${key}" />
-                <span>(${key}) ${value}</span>
-              </label>
-            `;
+          const s = JSON.parse(src);
+          const tags = [];
+          if (s.universities) for (let [u,y] of Object.entries(s.universities)) tags.push(`${u} ${y}`);
+          if (s.boards) for (let [b,y] of Object.entries(s.boards)) tags.push(`${b} ${y}`);
+          if (Array.isArray(s.books)) tags.push(...s.books);
+          return tags.map(t => `<span class="tag">${t}</span>`).join('');
+        } catch { return ''; }
+      }
+
+      function attachInteractions() {
+        document.querySelectorAll('input[type="radio"]').forEach(r => {
+          r.addEventListener('change', () => {
+            document.querySelectorAll(`input[name="${r.name}"]`).forEach(s => {
+              s.closest('.option-label').classList.remove('selected');
+            });
+            r.closest('.option-label').classList.add('selected');
+            // Only mark correct if JSON flagged it
+            if (r.closest('.option-label').classList.contains('correct')) { /* remain */ }
           });
-        } catch (e) {
-          html = '<p class="text-red-500 text-sm">Invalid options</p>';
-        }
-        return html;
+        });
+        document.querySelectorAll('.action-icon').forEach(ic => {
+          ic.addEventListener('click', () => {
+            const t = ic.textContent;
+            ic.textContent = t.endsWith('_border') ? t.replace('_border','') : t + '_border';
+            ic.classList.toggle('active');
+          });
+        });
       }
 
-      const fromId = getQueryParam('from');
-      const toId = getQueryParam('to');
-      if (fromId && toId) {
-        fetchMcqs(fromId, toId);
-      } else {
-        document.getElementById('mcq').innerHTML = '<p class="text-red-500">Please provide "from" and "to" query parameters in the URL.</p>';
-      }
+      const from = new URLSearchParams(location.search).get('from');
+      const to   = new URLSearchParams(location.search).get('to');
+      if (from && to) fetchMcqs(from, to);
+      else document.getElementById('mcq').innerHTML = '<p class="text-red-500">Add ?from=…&to=… to URL</p>';
     </script>
   </body>
 </html>
