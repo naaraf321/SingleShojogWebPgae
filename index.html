@@ -29,11 +29,63 @@
   <body class="bg-gray-100 p-4 md:p-8">
     <main id="mcq" class="max-w-3xl mx-auto"></main>
 
+    <!-- Report Modal -->
+    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg max-w-md w-full shadow-xl">
+        <h2 class="text-lg font-semibold mb-2">এই MCQ টি রিপোর্ট করতে চান?</h2>
+        <textarea id="reportComment" class="w-full mt-2 p-2 border rounded" rows="3" placeholder="অভিযোগ লিখুন (ঐচ্ছিক)"></textarea>
+        <div class="flex justify-end space-x-2 mt-4">
+          <button id="cancelReport" class="px-4 py-2 bg-gray-300 rounded">না</button>
+          <button id="confirmReport" class="px-4 py-2 bg-red-500 text-white rounded">রিপোর্ট করুন</button>
+        </div>
+      </div>
+    </div>
+
     <script>
       const API_URL = 'https://wnqytfyplnfvylsffglv.supabase.co/rest/v1';
-      const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA'; // your anon key
-
+      const API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA';
       const maps = { subjects: new Map(), chapters: new Map(), topics: new Map() };
+      let currentReportId = null;
+
+      document.addEventListener("click", function (e) {
+        if (e.target.classList.contains("report-btn")) {
+          currentReportId = e.target.dataset.mcqId;
+          document.getElementById("reportModal").classList.remove("hidden");
+        }
+      });
+
+      document.getElementById("cancelReport").addEventListener("click", () => {
+        document.getElementById("reportModal").classList.add("hidden");
+        document.getElementById("reportComment").value = "";
+      });
+
+      document.getElementById("confirmReport").addEventListener("click", async () => {
+        const comment = document.getElementById("reportComment").value.trim();
+        const updates = { has_problem: true };
+        if (comment !== "") updates.comments = comment;
+
+        if (currentReportId) {
+          const res = await fetch(`${API_URL}/mcqs?id=eq.${currentReportId}`, {
+            method: "PATCH",
+            headers: {
+              "apikey": API_KEY,
+              "Authorization": `Bearer ${API_KEY}`,
+              "Content-Type": "application/json",
+              "Prefer": "return=minimal"
+            },
+            body: JSON.stringify(updates)
+          });
+
+          if (res.ok) {
+            alert("রিপোর্ট সাবমিট হয়েছে। ধন্যবাদ!");
+          } else {
+            alert("রিপোর্ট সাবমিট করা যায়নি। আবার চেষ্টা করুন।");
+          }
+        }
+
+        document.getElementById("reportModal").classList.add("hidden");
+        document.getElementById("reportComment").value = "";
+      });
 
       async function fetchLookup() {
         for (const table of ['subjects','chapters','topics']) {
@@ -87,9 +139,8 @@
                 <span class="tag bg-indigo-100 text-indigo-700">${tp}</span>
               </div>
               <div class="flex items-center space-x-4">
-  <span class="material-icons text-red-500 cursor-pointer report-btn" data-mcq-id="${m.id}" title="Report">flag</span>
-</div>
-
+                <span class="material-icons text-red-500 cursor-pointer report-btn" data-mcq-id="${m.id}" title="Report">flag</span>
+              </div>
             </div>
             <div class="solution-box">
               ${m.answer_image_url ? `<img src="${m.answer_image_url}" class="solution-image"/>` : ''}
@@ -117,15 +168,6 @@
               s.closest('.option-label').classList.remove('selected');
             });
             r.closest('.option-label').classList.add('selected');
-            // Only mark correct if JSON flagged it
-            if (r.closest('.option-label').classList.contains('correct')) { /* remain */ }
-          });
-        });
-        document.querySelectorAll('.action-icon').forEach(ic => {
-          ic.addEventListener('click', () => {
-            const t = ic.textContent;
-            ic.textContent = t.endsWith('_border') ? t.replace('_border','') : t + '_border';
-            ic.classList.toggle('active');
           });
         });
       }
