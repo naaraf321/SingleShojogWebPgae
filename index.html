@@ -34,6 +34,10 @@
         transition: background-color 0.2s ease, border-color 0.2s ease;
         margin-bottom: 10px;
       }
+      .option-label:hover {
+        background-color: #f9fafb;
+        border-color: #d1d5db;
+      }
       .option-label.correct {
         background-color: #d1fae5;
         border-color: #6ee7b7;
@@ -60,6 +64,11 @@
           }
         });
         mcqs = await response.json();
+        console.log("Fetched MCQs:", mcqs);
+        if (!mcqs.length) {
+          document.getElementById('mcq').innerHTML = '<p class="text-red-500">No MCQs found for this range.</p>';
+          return;
+        }
         renderAllMcqs();
       }
 
@@ -108,7 +117,7 @@
               allTags.push(`${board} ${year}`);
             }
           }
-          if (source.books?.length) {
+          if (Array.isArray(source.books)) {
             allTags.push(...source.books);
           }
           html += allTags.map(tag => `<span class="tag">${tag}</span>`).join('');
@@ -121,11 +130,9 @@
         let html = '';
         try {
           const options = JSON.parse(optionsJson || '[]');
-          options.forEach(opt => {
-            const label = opt.label;
-            const text = opt.text;
-            const isCorrect = opt.correct;
-            const labelClass = isCorrect ? 'option-label correct' : 'option-label';
+          options.forEach((opt) => {
+            const { label, text, correct } = opt;
+            const labelClass = correct ? 'option-label correct' : 'option-label';
             html += `
               <label class="${labelClass}" for="q${qid}_opt${label}">
                 <input id="q${qid}_opt${label}" name="question${qid}" type="radio" value="${label}" />
@@ -134,6 +141,7 @@
             `;
           });
         } catch (e) {
+          console.error("Option parse failed:", e, optionsJson);
           html = '<p class="text-red-500 text-sm">Invalid options</p>';
         }
         return html;
