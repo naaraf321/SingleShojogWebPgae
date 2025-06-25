@@ -45,7 +45,6 @@
     </style>
   </head>
   <body class="bg-gray-100 p-4 md:p-8">
-    <div>Modifyed</div>
     <main id="mcq" class="max-w-3xl mx-auto"></main>
     <script>
       let mcqs = [];
@@ -117,9 +116,7 @@
             allTags.push(...source.books);
           }
           html += allTags.map(tag => `<span class="tag">${tag}</span>`).join('');
-        } catch (e) {
-          html += '<span class="text-red-500 text-sm">Invalid source info</span>';
-        }
+        } catch {}
         html += '</div>';
         return html;
       }
@@ -129,14 +126,12 @@
         try {
           const options = JSON.parse(optionsJson || '[]');
           options.forEach((opt) => {
-            const key = Object.keys(opt).find(k => k !== 'correct');
-            const value = opt[key];
-            const isCorrect = !!opt.correct || (key === correctAnswer);
-            const labelClass = isCorrect ? 'option-label correct' : 'option-label';
+            const { label, text, correct } = opt;
+            const labelClass = correct ? 'option-label correct' : 'option-label';
             html += `
-              <label class="${labelClass}" for="q${qid}_opt${key}">
-                <input id="q${qid}_opt${key}" name="question${qid}" type="radio" value="${key}" />
-                <span>(${key}) ${value}</span>
+              <label class="${labelClass}" for="q${qid}_opt${label}">
+                <input id="q${qid}_opt${label}" name="question${qid}" type="radio" value="${label}" />
+                <span>(${label}) ${text}</span>
               </label>
             `;
           });
