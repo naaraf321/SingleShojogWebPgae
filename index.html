@@ -5,19 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MCQ Viewer</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.3.6/dist/purify.min.js"></script>
-    <script
-      async
-      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
-    ></script>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet"
-    />
+
+    <script>
+      MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ], // Enable $...$ for inline math
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ], // Ensure $$...$$ and \[...\] for display math
+        },
+        svg: {
+          fontCache: "global", // Optional: Improves performance by caching fonts
+        },
+      };
+    </script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <style type="text/tailwindcss">
       body {
         font-family: "Hind Siliguri", sans-serif;
@@ -68,41 +77,23 @@
       }
     </style>
   </head>
-  <!-- Only body and key layout changes shown below (rest of HTML is as-is) -->
-
   <body class="bg-gray-100 p-4 sm:p-6 md:p-8">
     <main id="mcq" class="max-w-4xl w-full mx-auto"></main>
 
-    <!-- Report Modal -->
-    <div id="reportModal"
-      class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50 px-4 sm:px-0">
+    <div id="reportModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50 px-4 sm:px-0">
       <div class="bg-white p-4 sm:p-6 rounded-lg w-full max-w-md shadow-xl">
         <h2 class="text-base sm:text-lg font-semibold mb-2">এই MCQ টি রিপোর্ট করতে চান?</h2>
-        <textarea
-          id="reportComment"
-          class="w-full mt-2 p-2 border border-gray-300 rounded focus:ring focus:ring-indigo-200 focus:outline-none resize-none"
-          rows="3"
-          placeholder="অভিযোগ লিখুন (ঐচ্ছিক)"
-        ></textarea>
+        <textarea id="reportComment" class="w-full mt-2 p-2 border border-gray-300 rounded focus:ring focus:ring-indigo-200 focus:outline-none resize-none" rows="3" placeholder="অভিযোগ লিখুন (ঐচ্ছিক)"></textarea>
         <div class="flex justify-end space-x-2 mt-4">
-          <button id="cancelReport" class="px-4 py-2 bg-gray-300 text-sm sm:text-base rounded">
-            না
-          </button>
-          <button
-            id="confirmReport"
-            class="px-4 py-2 bg-red-500 text-white text-sm sm:text-base rounded hover:bg-red-600"
-          >
-            রিপোর্ট করুন
-          </button>
+          <button id="cancelReport" class="px-4 py-2 bg-gray-300 text-sm sm:text-base rounded">না</button>
+          <button id="confirmReport" class="px-4 py-2 bg-red-500 text-white text-sm sm:text-base rounded hover:bg-red-600">রিপোর্ট করুন</button>
         </div>
       </div>
     </div>
 
-
     <script>
       const API_URL = "https://wnqytfyplnfvylsffglv.supabase.co/rest/v1";
-      const API_KEY =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA";
+      const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InducXl0ZnlwbG5mdnlsc2ZmZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODM3MzYsImV4cCI6MjA1NzU1OTczNn0.MiqJv6b_xQn0vIUrdq0-C3rA8LMmizW3vz6oyxaLDgA";
       const maps = {
         subjects: new Map(),
         chapters: new Map(),
@@ -122,45 +113,40 @@
         document.getElementById("reportComment").value = "";
       });
 
-      document
-        .getElementById("confirmReport")
-        .addEventListener("click", async () => {
-          const comment = document.getElementById("reportComment").value.trim();
-          const updates = { has_problem: true };
-          if (comment !== "") updates.comments = comment;
+      document.getElementById("confirmReport").addEventListener("click", async () => {
+        const comment = document.getElementById("reportComment").value.trim();
+        const updates = { has_problem: true };
+        if (comment !== "") updates.comments = comment;
 
-          if (currentReportId) {
-            const res = await fetch(`${API_URL}/mcqs?id=eq.${currentReportId}`,
-              {
-                method: "PATCH",
-                headers: {
-                  apikey: API_KEY,
-                  Authorization: `Bearer ${API_KEY}`,
-                  "Content-Type": "application/json",
-                  Prefer: "return=minimal",
-                },
-                body: JSON.stringify(updates),
-              }
-            );
+        if (currentReportId) {
+          const res = await fetch(`${API_URL}/mcqs?id=eq.${currentReportId}`, {
+            method: "PATCH",
+            headers: {
+              apikey: API_KEY,
+              Authorization: `Bearer ${API_KEY}`,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify(updates),
+          });
 
-            if (res.ok) {
-              alert("রিপোর্ট সাবমিট হয়েছে। ধন্যবাদ!");
-            } else {
-              const errMsg = await res.text();
-              alert("রিপোর্ট করা যায়নি: " + errMsg);
-            }
+          if (res.ok) {
+            alert("রিপোর্ট সাবমিট হয়েছে। ধন্যবাদ!");
+          } else {
+            const errMsg = await res.text();
+            alert("রিপোর্ট করা যায়নি: " + errMsg);
           }
+        }
 
-          document.getElementById("reportModal").classList.add("hidden");
-          document.getElementById("reportComment").value = "";
-        });
+        document.getElementById("reportModal").classList.add("hidden");
+        document.getElementById("reportComment").value = "";
+      });
 
       async function fetchLookup() {
         for (const table of ["subjects", "chapters", "topics"]) {
-          const res = await fetch(`${API_URL}/${table}?select=id,name`,
-            {
-              headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` },
-            });
+          const res = await fetch(`${API_URL}/${table}?select=id,name`, {
+            headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` },
+          });
           const data = await res.json();
           data.forEach((r) => maps[table].set(r.id, r.name));
         }
@@ -173,78 +159,69 @@
           headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` },
         });
         const mcqs = await res.json();
-        document.getElementById("mcq").innerHTML =
-          mcqs.map(renderCard).join("") ||
-          '<p class="text-red-500">No MCQs found.</p>';
+        document.getElementById("mcq").innerHTML = mcqs.map(renderCard).join("") || '<p class="text-red-500">No MCQs found.</p>';
         attachInteractions();
-        MathJax.typeset();
+        // This is crucial: Re-typeset MathJax content after new HTML is added
+        if (typeof MathJax !== "undefined") {
+          MathJax.typesetPromise();
+        }
       }
 
       function renderCard(m) {
-  const ch = maps.chapters.get(m.chapter_id) || "";
-  const sb = maps.subjects.get(m.subject_id) || "";
-  const tp = maps.topics.get(m.topic_id) || "";
+        const ch = maps.chapters.get(m.chapter_id) || "";
+        const sb = maps.subjects.get(m.subject_id) || "";
+        const tp = maps.topics.get(m.topic_id) || "";
+        const opts = JSON.parse(m.options_json)
+          .map((o) => {
+            const cls = o.correct ? "option-label correct" : "option-label";
+            return `
+              <label class="${cls} block sm:flex sm:items-center" for="q${m.id}_opt${o.label}">
+                <input id="q${m.id}_opt${o.label}" name="question${m.id}" type="radio" value="${o.label}" />
+                <span class="mt-1 sm:mt-0">${o.text}</span>
+              </label>`;
+          })
+          .join("");
 
-  // Sanitize the question_markdown if it might contain arbitrary HTML
-  // For plain text with MathJax, this might not be strictly necessary,
-  // but it's good practice for user-generated content.
-  const sanitizedQuestionMarkdown = DOMPurify.sanitize(m.question_markdown);
+        return `
+          <div class="question-card">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
+              <h2 class="text-base sm:text-lg font-semibold text-gray-800 flex-1">${m.question_markdown}</h2>
+              <div class="text-sm text-gray-500">ID: ${m.id}</div>
+            </div>
 
-  const opts = JSON.parse(m.options_json).map((o) => {
-      const cls = o.correct ? "option-label correct" : "option-label";
-      // Sanitize option text as well
-      const sanitizedOptionText = DOMPurify.sanitize(o.text);
-      return `
-          <label class="${cls} block sm:flex sm:items-center" for="q${m.id}_opt${o.label}">
-            <input id="q${m.id}_opt${o.label}" name="question${m.id}" type="radio" value="${o.label}" />
-            <span class="mt-1 sm:mt-0">${sanitizedOptionText}</span>
-          </label>`;
-    })
-    .join("");
+            ${m.question_image_URL ? `<img src="${m.question_image_URL}" class="question-image max-w-full h-auto" />` : ""}
 
-    return `
-    <div class="question-card">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
-        <h2 class="text-base sm:text-lg font-semibold text-gray-800 flex-1 math-question">${sanitizedQuestionMarkdown}</h2>
-        <div class="text-sm text-gray-500">ID: ${m.id}</div>
-      </div>
+            <div class="flex flex-wrap justify-end mb-4 gap-2">
+              ${renderSourceTags(m.source_info)}
+            </div>
 
-      ${m.question_image_URL ? `<img src="${m.question_image_URL}" class="question-image max-w-full h-auto" />` : ""}
+            <div class="space-y-2 sm:space-y-3">${opts}</div>
 
-      <div class="flex flex-wrap justify-end mb-4 gap-2">
-        ${renderSourceTags(m.source_info)}
-      </div>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-6 gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="tag">${sb}</span>
+                <span class="tag">${ch}</span>
+                <span class="tag bg-indigo-100 text-indigo-700">${tp}</span>
+              </div>
+              <div class="flex items-center space-x-3 mt-2 sm:mt-0">
+                <span class="material-icons text-red-500 cursor-pointer report-btn" data-mcq-id="${m.id}" title="Report">flag</span>
+              </div>
+            </div>
 
-      <div class="space-y-2 sm:space-y-3">${opts}</div>
-
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-6 gap-3">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="tag">${sb}</span>
-          <span class="tag">${ch}</span>
-          <span class="tag bg-indigo-100 text-indigo-700">${tp}</span>
-        </div>
-        <div class="flex items-center space-x-3 mt-2 sm:mt-0">
-          <span class="material-icons text-red-500 cursor-pointer report-btn" data-mcq-id="${m.id}" title="Report">flag</span>
-        </div>
-      </div>
-
-      <div class="solution-box mt-4 sm:mt-6">
-        ${m.answer_image_url ? `<img src="${m.answer_image_url}" class="solution-image max-w-full h-auto" />` : ""}
-        <p class="text-green-600 font-medium text-sm sm:text-base mb-2">(${m.correct_answer})</p>
-        <p class="text-xs sm:text-sm text-gray-600">${m.answer_explanation}</p>
-      </div>
-    </div>`;
-}
+            <div class="solution-box mt-4 sm:mt-6">
+              ${m.answer_image_url ? `<img src="${m.answer_image_url}" class="solution-image max-w-full h-auto" />` : ""}
+              <p class="text-green-600 font-medium text-sm sm:text-base mb-2">(${m.correct_answer})</p>
+              <p class="text-xs sm:text-sm text-gray-600">${m.answer_explanation}</p>
+            </div>
+          </div>`;
+      }
 
       function renderSourceTags(src) {
         try {
           const s = JSON.parse(src);
           const tags = [];
-          if (s.universities)
-            for (let [u, y] of Object.entries(s.universities))
-              tags.push(`${u} ${y}`);
-          if (s.boards)
-            for (let [b, y] of Object.entries(s.boards)) tags.push(`${b} ${y}`);
+          if (s.universities) for (let [u, y] of Object.entries(s.universities)) tags.push(`${u} ${y}`);
+          if (s.boards) for (let [b, y] of Object.entries(s.boards)) tags.push(`${b} ${y}`);
           if (Array.isArray(s.books)) tags.push(...s.books);
           return tags.map((t) => `<span class="tag">${t}</span>`).join("");
         } catch {
@@ -255,11 +232,9 @@
       function attachInteractions() {
         document.querySelectorAll('input[type="radio"]').forEach((r) => {
           r.addEventListener("change", () => {
-            document
-              .querySelectorAll(`input[name="${r.name}"]`)
-              .forEach((s) => {
-                s.closest(".option-label").classList.remove("selected");
-              });
+            document.querySelectorAll(`input[name="${r.name}"]`).forEach((s) => {
+              s.closest(".option-label").classList.remove("selected");
+            });
             r.closest(".option-label").classList.add("selected");
           });
         });
@@ -268,9 +243,7 @@
       const from = new URLSearchParams(location.search).get("from");
       const to = new URLSearchParams(location.search).get("to");
       if (from && to) fetchMcqs(from, to);
-      else
-        document.getElementById("mcq").innerHTML =
-          '<p class="text-red-500">Add ?from=…&to=… to URL</p>';
+      else document.getElementById("mcq").innerHTML = '<p class="text-red-500">Add ?from=…&to=… to URL</p>';
     </script>
   </body>
 </html>
