@@ -130,13 +130,12 @@
           if (comment !== "") updates.comments = comment;
 
           if (currentReportId) {
-            const res = await fetch(
-              ${API_URL}/mcqs?id=eq.${currentReportId},
+            const res = await fetch(`${API_URL}/mcqs?id=eq.${currentReportId}`,
               {
                 method: "PATCH",
                 headers: {
                   apikey: API_KEY,
-                  Authorization: Bearer ${API_KEY},
+                  Authorization: `Bearer ${API_KEY}`,
                   "Content-Type": "application/json",
                   Prefer: "return=minimal",
                 },
@@ -158,9 +157,10 @@
 
       async function fetchLookup() {
         for (const table of ["subjects", "chapters", "topics"]) {
-          const res = await fetch(${API_URL}/${table}?select=id,name, {
-            headers: { apikey: API_KEY, Authorization: Bearer ${API_KEY} },
-          });
+          const res = await fetch(`${API_URL}/${table}?select=id,name`,
+            {
+              headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` },
+            });
           const data = await res.json();
           data.forEach((r) => maps[table].set(r.id, r.name));
         }
@@ -168,9 +168,9 @@
 
       async function fetchMcqs(from, to) {
         await fetchLookup();
-        const url = ${API_URL}/mcqs?select=*&id=gte.${from}&id=lte.${to};
+        const url = `${API_URL}/mcqs?select=*&id=gte.${from}&id=lte.${to}`;
         const res = await fetch(url, {
-          headers: { apikey: API_KEY, Authorization: Bearer ${API_KEY} },
+          headers: { apikey: API_KEY, Authorization: `Bearer ${API_KEY}` },
         });
         const mcqs = await res.json();
         document.getElementById("mcq").innerHTML =
@@ -242,11 +242,11 @@
           const tags = [];
           if (s.universities)
             for (let [u, y] of Object.entries(s.universities))
-              tags.push(${u} ${y});
+              tags.push(`${u} ${y}`);
           if (s.boards)
-            for (let [b, y] of Object.entries(s.boards)) tags.push(${b} ${y});
+            for (let [b, y] of Object.entries(s.boards)) tags.push(`${b} ${y}`);
           if (Array.isArray(s.books)) tags.push(...s.books);
-          return tags.map((t) => <span class="tag">${t}</span>).join("");
+          return tags.map((t) => `<span class="tag">${t}</span>`).join("");
         } catch {
           return "";
         }
@@ -256,7 +256,7 @@
         document.querySelectorAll('input[type="radio"]').forEach((r) => {
           r.addEventListener("change", () => {
             document
-              .querySelectorAll(input[name="${r.name}"])
+              .querySelectorAll(`input[name="${r.name}"]`)
               .forEach((s) => {
                 s.closest(".option-label").classList.remove("selected");
               });
